@@ -1,6 +1,7 @@
 #ifndef ESTRUCTURAS_H
 #define ESTRUCTURAS_H
 
+
 #include <string>
 #include<iostream>
 #include <vector>
@@ -12,11 +13,20 @@ struct Player
     std::string playmode;
     std::string side;
     bool see_ball;
-    bool see_goal;
+    bool see_own_goal;
+    bool see_opponent_goal;
+    int flags_seen;
     int unum;
     double x;
     double y;
 };
+
+vector<string> referee = {"goal_l_", "goal_r_", "time_up", "half_time", "foul_r", "foul_l", "goalie_catch_ball_r", "goalie_catch_ball_l"};
+
+vector<string> tipo_de_mensajes = {"see", "sense_body"};
+
+vector<string> play_modes = {"before_kick_off", "play_on", "time_over", "kick_off_l", "kick_off_r", "corner_kick_l", "corner_kick_r", "goal_kick_r", "goal_kick_l"};
+
 
 struct Ball
 {
@@ -28,16 +38,12 @@ struct Ball
     double angle;
 };
 
-struct CentroPorteriaDerecha
+struct Goal
 {
     std::string x;
     std::string y;
-};
-
-struct CentroPorteriaIzquierda
-{
-    std::string x;
-    std::string y;
+    std::string side;
+    float distance;
 };
 
 struct JugadorCercano
@@ -46,6 +52,7 @@ struct JugadorCercano
     std::string y;
     std::string distancia;
     std::string unum;
+    float distance;
 };
 
 struct JugadoresAlrededor
@@ -54,6 +61,27 @@ struct JugadoresAlrededor
     std::vector<int> y;
     std::vector<int> distancia;
     std::vector<int> unum;
+    float distance;
 };
+
+struct Field
+{
+    vector<float> flag_center;
+    float flag_center_distance;
+    vector<float> flag_center_top;
+    float flag_center_top_distance;
+    vector<float> flag_center_bottom;
+    float flag_center_bottom_distance;
+    vector<float> flag_left_top;
+    float flag_left_top_distance;
+    vector<float> flag_left_bottom;
+    float flag_left_bottom_distance;
+    vector<float> flag_right_top;
+    float flag_right_top_distance;
+    vector<float> flag_right_bottom;
+    float flag_right_bottom_distance;
+};
+
+
 
 #endif // ESTRUCTURAS_H
