@@ -7,7 +7,8 @@ using namespace std;
 
 // Include headers
 #include "functions.h"
-#include "estructuras.h"
+#include "structs.h"
+
 
 // Functions
 
@@ -40,7 +41,7 @@ Player parseInitialMessage(std::string &message, Player &player)
     return player;
 }
 
-vector<string> separate_string_separator(string &s, string separator)
+vector<string> separate_string_separator(string & s, string separator)
 {
     vector<string> v;
     int pos = 0;
@@ -54,13 +55,32 @@ vector<string> separate_string_separator(string &s, string separator)
 }
 
 // Parse string function
-vector<string> separate_string(string &s)
+vector<string> separate_string(string & s)
 {
     // Separa por contenido entre parentesis, por nivel: "((hola) (soy) (dani)) (que tal) (estas)" -> {(hola) (soy) (dani), que tal, estas}
     vector<string> v;
     int pos{0};
     int level{0};
     string temp;
+     /*
+    // Compruebo que empieza con parentesis
+    if (s[0] != '(')
+    {
+        throw std::runtime_error("No empieza con parentesis");
+    }
+   
+    // Compruebo que termina con parentesis
+    if (s[s.size()-1] != ')')
+    {
+        throw std::runtime_error("No termina con parentesis");
+    }
+    
+    // Comprueba que no haya paréntesis sin ningún carácter dentro
+    if (s[pos] == '(' && s[pos+1] == ')')
+    {
+        throw std::runtime_error("Parentesis vacio");
+    }
+    */
 
     // Recorro el string
     while (pos < s.size())
@@ -85,11 +105,21 @@ vector<string> separate_string(string &s)
         }
         else
         {
-            temp += s[pos];
+            // Comprueba que no hay palabras sin parentesis
+            /*
+            if (level == 0 && s[pos] != ' ')
+            {
+                throw std::runtime_error("Palabra sin parentesis");
+            }
+            */
+            
+            
+                temp += s[pos];
+            
         }
         pos++;
     }
-
+    
     // Compruebo que se han abierto y cerrado los mismos parentesis
     if (level != 0)
     {
@@ -104,16 +134,59 @@ vector<string> separate_string(string &s)
 // Find data in see message function
 void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goal &own_goal, Goal &opponent_goal, Field &field)
 {
-
     vector<string> ball_coords;
-    bool found_ball = false;
     player.flags_seen = 0;
+
+    player.see_ball = false;
+
+    // All the flags are not seen at the beginning
+    field.flag_center = {999, 999};
+    field.flag_center_top = {999, 999};
+    field.flag_center_bottom = {999, 999};
+    field.flag_left_top = {999, 999};
+    field.flag_left_bottom = {999, 999};
+    field.flag_right_top = {999, 999};
+    field.flag_right_bottom = {999, 999};
+    field.flag_penalty_left_top = {999, 999};
+    field.flag_penalty_left_center = {999, 999};
+    field.flag_penalty_left_bottom = {999, 999};
+    field.flag_penalty_right_top = {999, 999};
+    field.flag_penalty_right_center = {999, 999};
+    field.flag_penalty_right_bottom = {999, 999};
+    field.flag_goal_left_top = {999, 999};
+    field.flag_goal_left_bottom = {999, 999};
+    field.flag_goal_right_top = {999, 999};
+    field.flag_goal_right_bottom = {999, 999};
+
+    if (own_goal.side == "l")
+    {
+        player.see_own_goal = false;
+    }
+    else
+    {
+        player.see_opponent_goal = false;
+    }
+    if (own_goal.side == "r")
+    {
+        player.see_own_goal = false;
+    }
+    else
+    {
+        player.see_opponent_goal = false;
+    }
+
+
+
+
     for (size_t i = 0; i < see_message.size(); i++)
     {
-        // Search for the ball
-        if (see_message[i].find("(b)") != string::npos)
+        if (see_message[i].find("(p " + std::to_string(player.unum) + " )")!=string::npos)
         {
-            cout << "The player sees the ball" << endl;
+        }
+        
+        // Search for the ball
+        if (see_message[i].find("(b)")!=string::npos)
+        {
             player.see_ball = true;
             ball_coords = separate_string_separator(see_message[i], " ");
             ball.x = ball_coords[1];
@@ -125,12 +198,10 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
             // Calculate the angle to the ball
             double angle = atan2(stod(ball.y), stod(ball.x));
             ball.angle = angle * 180 / M_PI;
-            found_ball = true;
-            // cout << "Angle to the ball: " << angle << endl;
-        }
+        } 
 
         // Search for the right goal
-        if (see_message[i].find("(g r)") != string::npos)
+        if (see_message[i].find("(g r)")!=string::npos)
         {
             cout << "The player sees the right goal" << endl;
             vector<string> goal_coords = separate_string_separator(see_message[i], " ");
@@ -139,7 +210,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
             {
                 own_goal.x = goal_coords[2];
                 own_goal.y = goal_coords[3];
-                own_goal.distance = sqrt(pow(stof(goal_coords[2]), 2) + pow(stof(goal_coords[3]), 2));
                 cout << "Own goal coordinates: " << own_goal.x << " " << own_goal.y << endl;
                 player.see_own_goal = true;
             }
@@ -147,25 +217,14 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
             {
                 opponent_goal.x = goal_coords[2];
                 opponent_goal.y = goal_coords[3];
-                opponent_goal.distance = sqrt(pow(stof(goal_coords[2]), 2) + pow(stof(goal_coords[3]), 2));
+                opponent_goal.angle = atan2(stof(goal_coords[3]), stof(goal_coords[2])) * 180 / M_PI;
                 cout << "Opponent goal coordinates: " << opponent_goal.x << " " << opponent_goal.y << endl;
                 player.see_opponent_goal = true;
             }
         }
-        else
-        {
-            if (own_goal.side == "r")
-            {
-                player.see_own_goal = false;
-            }
-            else
-            {
-                player.see_opponent_goal = false;
-            }
-        }
 
         // Search for the left goal
-        if (see_message[i].find("(g l)") != string::npos)
+        if (see_message[i].find("(g l)")!=string::npos)
         {
             cout << "The player sees the left goal" << endl;
             vector<string> goal_coords = separate_string_separator(see_message[i], " ");
@@ -174,7 +233,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
             {
                 own_goal.x = goal_coords[2];
                 own_goal.y = goal_coords[3];
-                own_goal.distance = sqrt(pow(stof(goal_coords[2]), 2) + pow(stof(goal_coords[3]), 2));
                 cout << "Own goal coordinates: " << own_goal.x << " " << own_goal.y << endl;
                 player.see_own_goal = true;
             }
@@ -182,28 +240,19 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
             {
                 opponent_goal.x = goal_coords[2];
                 opponent_goal.y = goal_coords[3];
-                opponent_goal.distance = sqrt(pow(stof(goal_coords[2]), 2) + pow(stof(goal_coords[3]), 2));
+                opponent_goal.angle = atan2(stof(goal_coords[3]), stof(goal_coords[2])) * 180 / M_PI;
                 cout << "Opponent goal coordinates: " << opponent_goal.x << " " << opponent_goal.y << endl;
                 player.see_opponent_goal = true;
             }
         }
-        else
-        {
-            if (own_goal.side == "l")
-            {
-                player.see_own_goal = false;
-            }
-            else
-            {
-                player.see_opponent_goal = false;
-            }
-        }
 
+        // Search for the flags
+        // Search for the center flag
         if (see_message[i].find("(f c)") != string::npos)
         {
+            player.flags_seen++;
             vector<string> center_coords = separate_string_separator(see_message[i], " ");
             field.flag_center = {stof(center_coords[2]), stof(center_coords[3])};
-            field.flag_center_distance = sqrt(pow(stof(center_coords[2]), 2) + pow(stof(center_coords[3]), 2));
             cout << "Center flag coordinates: " << field.flag_center[0] << " " << field.flag_center[1] << endl;
         }
 
@@ -212,8 +261,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> center_top_coords = separate_string_separator(see_message[i], " ");
             field.flag_center_top = {stof(center_top_coords[3]), stof(center_top_coords[4])};
-            field.flag_center_top_distance = sqrt(pow(stof(center_top_coords[3]), 2) + pow(stof(center_top_coords[4]), 2));
-            cout << "flag_center_top_distance: " <<  field.flag_center_top_distance << endl;
             player.flags_seen++;
         }
 
@@ -222,8 +269,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> center_bottom_coords = separate_string_separator(see_message[i], " ");
             field.flag_center_bottom = {stof(center_bottom_coords[3]), stof(center_bottom_coords[4])};
-            field.flag_center_bottom_distance = sqrt(pow(stof(center_bottom_coords[3]), 2) + pow(stof(center_bottom_coords[4]), 2));
-            cout << "flag_center_bottom_distance: " <<  field.flag_center_bottom_distance << endl;
             player.flags_seen++;
         }
 
@@ -232,8 +277,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> left_top_coords = separate_string_separator(see_message[i], " ");
             field.flag_left_top = {stof(left_top_coords[3]), stof(left_top_coords[4])};
-            field.flag_left_top_distance = sqrt(pow(stof(left_top_coords[3]), 2) + pow(stof(left_top_coords[4]), 2));
-            cout << "left top flag coordinates: " <<  field.flag_left_top_distance << endl;
             player.flags_seen++;
         }
 
@@ -242,8 +285,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> left_bottom_coords = separate_string_separator(see_message[i], " ");
             field.flag_left_bottom = {stof(left_bottom_coords[3]), stof(left_bottom_coords[4])};
-            field.flag_left_bottom_distance = sqrt(pow(stof(left_bottom_coords[3]), 2) + pow(stof(left_bottom_coords[4]), 2));
-            cout << "flag_left_bottom_distance: " <<  field.flag_left_bottom_distance << endl;
             player.flags_seen++;
         }
 
@@ -252,8 +293,6 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> right_top_coords = separate_string_separator(see_message[i], " ");
             field.flag_right_top = {stof(right_top_coords[3]), stof(right_top_coords[4])};
-            field.flag_right_top_distance = sqrt(pow(stof(right_top_coords[3]), 2) + pow(stof(right_top_coords[4]), 2));
-            cout << "flag_right_top_distance: " <<  field.flag_right_top_distance << endl;
             player.flags_seen++;
         }
 
@@ -262,120 +301,237 @@ void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goa
         {
             vector<string> right_bottom_coords = separate_string_separator(see_message[i], " ");
             field.flag_right_bottom = {stof(right_bottom_coords[3]), stof(right_bottom_coords[4])};
-            field.flag_right_bottom_distance = sqrt(pow(stof(right_bottom_coords[3]), 2) + pow(stof(right_bottom_coords[4]), 2));
-            cout << "flag_right_bottom_distance: " <<  field.flag_right_bottom_distance << endl;
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area left top flag
+        if (see_message[i].find("(f p l t)") != string::npos)
+        {
+            vector<string> penalty_left_top_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_left_top = {stof(penalty_left_top_coords[4]), stof(penalty_left_top_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area left center flag
+        if (see_message[i].find("(f p l c)") != string::npos)
+        {
+            vector<string> penalty_left_center_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_left_center = {stof(penalty_left_center_coords[4]), stof(penalty_left_center_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area left bottom flag
+        if (see_message[i].find("(f p l b)") != string::npos)
+        {
+            vector<string> penalty_left_bottom_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_left_bottom = {stof(penalty_left_bottom_coords[4]), stof(penalty_left_bottom_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area right top flag
+        if (see_message[i].find("(f p r t)") != string::npos)
+        {
+            vector<string> penalty_right_top_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_right_top = {stof(penalty_right_top_coords[4]), stof(penalty_right_top_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area right center flag
+        if (see_message[i].find("(f p r c)") != string::npos)
+        {
+            vector<string> penalty_right_center_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_right_center = {stof(penalty_right_center_coords[4]), stof(penalty_right_center_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the penalty area right bottom flag
+        if (see_message[i].find("(f p r b)") != string::npos)
+        {
+            vector<string> penalty_right_bottom_coords = separate_string_separator(see_message[i], " ");
+            field.flag_penalty_right_bottom = {stof(penalty_right_bottom_coords[4]), stof(penalty_right_bottom_coords[5])};
+            player.flags_seen++;
+        }
+    
+        // Search for the goal left top flag
+        if (see_message[i].find("(f g l t)") != string::npos)
+        {
+            vector<string> goal_left_top_coords = separate_string_separator(see_message[i], " ");
+            field.flag_goal_left_top = {stof(goal_left_top_coords[4]), stof(goal_left_top_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the goal left bottom flag
+        if (see_message[i].find("(f g l b)") != string::npos)
+        {
+            vector<string> goal_left_bottom_coords = separate_string_separator(see_message[i], " ");
+            field.flag_goal_left_bottom = {stof(goal_left_bottom_coords[4]), stof(goal_left_bottom_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the goal right top flag
+        if (see_message[i].find("(f g r t)") != string::npos)
+        {
+            vector<string> goal_right_top_coords = separate_string_separator(see_message[i], " ");
+            field.flag_goal_right_top = {stof(goal_right_top_coords[4]), stof(goal_right_top_coords[5])};
+            player.flags_seen++;
+        }
+
+        // Search for the goal right bottom flag
+        if (see_message[i].find("(f g r b)") != string::npos)
+        {
+            vector<string> goal_right_bottom_coords = separate_string_separator(see_message[i], " ");
+            field.flag_goal_right_bottom = {stof(goal_right_bottom_coords[4]), stof(goal_right_bottom_coords[5])};
             player.flags_seen++;
         }
     }
-    if (found_ball == false)
+}
+
+// Return to zone function
+string returnToZone(Player const &player)
+{
+    if (player.zone.x == 999)
     {
-        player.see_ball = false;
+        std::string rotate_command = "(turn " + to_string(50) + ")";
+        cout << "I DONT SEE MY ZONE" << endl;
+        return rotate_command;
+    }
+    else
+    {
+        // Compute the angle between the player and the flag
+        double angle = atan2(player.zone.y - player.y, player.zone.x - player.x) * 180 / M_PI;
+        std::string dash_command = "(dash 100 " + to_string(angle) + ")";
+        cout << "I SEE, GOING TO MY ZONE" << endl;
+        return dash_command;
     }
 }
 
-bool estasentusitio(const Field &field, const Player &player, const Goal &own_goal, const Goal &opponent_goal)
+// Trilateration 2D function
+vector<double> trilateration(vector<double> &P1, vector<double> &P2, vector<double> &P3, double &D1, double &D2, double &D3)
 {
-    if (player.side == "l")
+    // Calculate matrix A
+    vector<double> A = {2*(P2[0]-P1[0]), 2*(P2[1]-P1[1]),
+                        2*(P3[0]-P1[0]), 2*(P3[1]-P1[1])};
+
+    // Calculate matrix B
+    vector<double> B = {static_cast<double>(pow(D1, 2) - pow(D2, 2) + pow(P2[0], 2) - pow(P1[0], 2) + pow(P2[1], 2) - pow(P1[1], 2)),
+                        static_cast<double>(pow(D1, 2) - pow(D3, 2) + pow(P3[0], 2) - pow(P1[0], 2) + pow(P3[1], 2) - pow(P1[1], 2))};
+
+    // Calculate the inverse of A
+    double det = A[0]*A[3] - A[1]*A[2];
+    vector<double> A_inv = {A[3]/det, -A[1]/det,
+                           -A[2]/det, A[0]/det};
+
+    // Calculate the result
+    vector<double> result = {A_inv[0]*B[0] + A_inv[1]*B[1],
+                            A_inv[2]*B[0] + A_inv[3]*B[1]};
+
+    return result;
+}
+
+// Calculate distance between two points
+double distance(vector<double> &P1, vector<double> &P2)
+{
+    return sqrt(pow(P1[0] - P2[0], 2) + pow(P1[1] - P2[1], 2));
+}
+
+
+
+// moveToPosition function
+string moveToZone(double &orientation, vector<double> const &P_player, Posicion const &P_zone)
+{
+    // Compute the angle between the player and the zone with respect to the orientation of the player
+    double angle = atan2(P_zone.y - P_player[1], P_zone.x - P_player[0]) * 180 / M_PI;
+    if (angle < 0)
     {
-        switch (player.unum)
+        angle += 360;
+    }
+    // Normalize theorientation
+    if (orientation < 0)
+    {
+        while (orientation < 0)
         {
-        case 1:
-            if ((field.flag_left_top_distance > 27 || field.flag_left_top_distance <=0) &&
-                (field.flag_left_bottom_distance > 27 || field.flag_left_bottom_distance <=0) &&
-                (opponent_goal.distance > 98.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            // cout<<field.flag_left_top_distance<<endl;
-            // cout<<field.flag_left_bottom_distance<<endl;
-            // cout<<opponent_goal.distance<<endl;
-            break;
-        case 2:
-            if ((own_goal.distance > 7 || own_goal.distance <=0) &&
-                (field.flag_left_top_distance > 33 || field.flag_left_top_distance <=0) &&
-                (field.flag_left_bottom_distance > 14.5 || field.flag_left_bottom_distance <=0) &&
-                //(field.flag_center_top_distance > 54 || field.flag_center_top_distance <=0) &&
-                (field.flag_center_bottom_distance > 42.5 || field.flag_center_bottom_distance <=0) &&
-                (opponent_goal.distance > 77.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 3:
-            if ((own_goal.distance > 7 || own_goal.distance <=0) &&
-                (field.flag_left_bottom_distance > 33 || field.flag_left_bottom_distance <=0) &&
-                (field.flag_left_top_distance > 14.5 || field.flag_left_top_distance <=0) &&
-                (field.flag_center_top_distance > 42.5 || field.flag_center_top_distance <=0) &&
-                (opponent_goal.distance > 77.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 4:
-            if ((own_goal.distance > 17.6 || own_goal.distance <=0) &&
-                (field.flag_center_bottom_distance > 54 || field.flag_center_bottom_distance <=0) &&
-                (opponent_goal.distance > 61.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 5:
-            if ((own_goal.distance > 17.6 || own_goal.distance <=0) &&
-                (field.flag_center_top_distance > 54 || field.flag_center_top_distance <=0) &&
-                (opponent_goal.distance > 61.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 6:
-            if ((own_goal.distance > 8 || own_goal.distance <=0) &&
-                (field.flag_left_top_distance > 25 || field.flag_left_top_distance <=0) &&
-                (field.flag_center_top_distance > 41.5 || field.flag_center_top_distance <=0) &&
-                (opponent_goal.distance > 68.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 7:
-            if ((own_goal.distance > 8 || own_goal.distance <=0) &&
-                (field.flag_left_bottom_distance > 25 || field.flag_left_bottom_distance <=0) &&
-                (field.flag_center_bottom_distance > 41.5 || field.flag_center_bottom_distance <=0) &&
-                (opponent_goal.distance > 68.5 || opponent_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 8:
-            if ((own_goal.distance > 35.5 || own_goal.distance <=0) &&
-                (field.flag_center_top_distance > 32 || field.flag_center_top_distance <=0) &&
-                (field.flag_right_top_distance > 25 || field.flag_right_top_distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 9:
-            if ((own_goal.distance > 35.5 || own_goal.distance <=0) &&
-                (field.flag_center_bottom_distance > 32 || field.flag_center_bottom_distance <=0) &&
-                (field.flag_right_bottom_distance > 25 || field.flag_right_bottom_distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 10:
-            if ((own_goal.distance > 14 || own_goal.distance <=0) &&
-                (field.flag_left_top_distance > 35.5 || field.flag_left_top_distance <=0) &&
-                (field.flag_left_bottom_distance > 35.5 || field.flag_left_bottom_distance <=0))
-            {
-                return true;
-            }
-            break;
-        case 11:
-            if ((own_goal.distance > 35.5 || own_goal.distance <=0))
-            {
-                return true;
-            }
-            break;
+            orientation += 360;
         }
     }
-    return false;
+    else if (orientation > 360)
+    {
+        while (orientation > 360)
+        {
+            orientation -= 360;
+        }
+    }
+    // Compute the difference between the orientation of the player and the angle
+    double diff = (angle - orientation) + 180;
+    std::string dash_command = "(dash 100 " + to_string(diff) + ")"; 
+    return dash_command;
 }
+
+//function dash
+string dash(double power, double angle)
+{
+    std::string dash_command = "(dash " + to_string(power) + " " + to_string(angle) + ")";
+    return dash_command;
+}
+
+/*
+o la direccion si el remitente es otro jugador
+self --> si el remitente eres tu mismo
+referee --> si es el arbitro
+online_coach_left
+online_coach_right
+*/
+
+//find hear message function
+void store_data_hear(string &hear_message) //(hear 0 referee kick_off_l)  
+{
+    vector<string> aux_hear_message = separate_string(hear_message); // hear 0 referee kick_off_l
+    vector<string> valores_mensaje_Hear;
+    for (size_t i = 0; i < aux_hear_message.size(); i++)
+    {
+        if (aux_hear_message[i].find("hear") != string::npos)
+        {
+            valores_mensaje_Hear = separate_string_separator(aux_hear_message[i], " ");
+            cout << "TIME: " << valores_mensaje_Hear[1] << endl;
+            cout << "REFEREE: " << valores_mensaje_Hear[2] << endl;
+            cout << "MODO: " << valores_mensaje_Hear[3] << endl;
+        }
+    }
+}
+
+//find distance to other player
+double distanceToPlayer(vector<double> &P1, vector<double> &P2)
+{
+    return sqrt(pow(P1[0] - P2[0], 2) + pow(P1[1] - P2[1], 2));
+}
+
+// Find data in see message function
+/*
+// Move command function
+void sendInitialMoveMessage(const Player &player, MinimalSocket::udp::Udp<true> &udp_socket, MinimalSocket::Address const &recipient)
+{
+    struct Posicion
+    {
+        int x;
+        int y;
+    };
+
+    vector<Posicion>
+        posiciones = {{-50, 0},
+                      {-40, -10},
+                      {-35, -28},
+                      {-40, 10},
+                      {-35, 28},
+                      {-25, 11},
+                      {-8, 20},
+                      {-25, -11},
+                      {-5, 0},
+                      {-15, 0},
+                      {-8, -20}};
+  
+    Posicion myPos = posiciones[player.unum - 1];
+
+    auto moveCommand = "(move " + to_string(myPos.x) + " " + to_string(myPos.y) + ")";
+    udp_socket.sendTo(moveCommand, recipient);
+    cout << "Move command sent" << "Posicion: " << moveCommand << endl;
+}
+*/

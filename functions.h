@@ -3,7 +3,7 @@
 #include<vector>
 #include<string>
 #include <cmath>
-#include"estructuras.h"
+#include"structs.h"
 using namespace std;
 
 Player parseInitialMessage(std::string &message, Player &player);
@@ -14,6 +14,12 @@ vector<string> separate_string_separator(string & s, string separator);
 
 void store_data_see(vector<string> &see_message, Player &player, Ball &ball, Goal &own_goal, Goal &opponent_goal, Field &field);
 
-vector<float> trilateration(vector<float> &P1, vector<float> &P2, vector<float> &P3);
+string returnToZone(Player const &player);
 
-bool estasentusitio (const Field &field, const Player &player, const Goal &own_goal, const Goal &opponent_goal);
+vector<double> trilateration(vector<double> &P1, vector<double> &P2, vector<double> &P3, double &D1, double &D2, double &D3);
+
+string moveToZone(double &orientation, vector<double> const &P_player, Posicion const &P_zone);
+
+string dash(double power, double angle);
+
+void store_data_hear(string &hear_message);
